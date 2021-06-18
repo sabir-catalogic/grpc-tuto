@@ -1,0 +1,1 @@
+protoc --go-grpc_out=. calculator/calculatorpb/calculator.proto --go_out=. calculator/calculatorpb/calculator.proto
