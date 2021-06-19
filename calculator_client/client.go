@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"google.golang.org/grpc"
-	"io"
 	"log"
 	"test_go/calculator/calculatorpb"
 )
@@ -19,7 +18,8 @@ func main() {
 	c:=calculatorpb.NewCalculatorServiceClient(cc)
 
 	//doUnary(c)
-	doServerStreaming(c)
+	//doServerStreaming(c)
+	doClientStreaming(c)
 }
 
 //func doUnary(c calculatorpb.CalculatorServiceClient)  {
@@ -35,25 +35,48 @@ func main() {
 //	log.Printf("Response from Sum : %v",res.SumResult)
 //}
 
+//
+//func doServerStreaming(c calculatorpb.CalculatorServiceClient)  {
+//	fmt.Println("Starting PrimeNumberDecomposition ServerStreaming rpc...")
+//	req:=&calculatorpb.PrimeNumberDecompositonRequest{
+//		Number: 26,
+//	}
+//
+//	stream,err:=c.PrimeNumberDecomposition(context.Background(),req)
+//	if err !=nil{
+//		log.Fatalf("error while calling PrimeDecomposition rpc:%v",err)
+//	}
+//	for {
+//		res,err:=stream.Recv()
+//		if err==io.EOF{
+//			break
+//		}
+//		if err!=nil{
+//			log.Fatalf("something went wrong %v",err)
+//		}
+//		fmt.Println(res.GetPrimeFactor())
+//	}
+//}
 
-func doServerStreaming(c calculatorpb.CalculatorServiceClient)  {
-	fmt.Println("Starting PrimeNumberDecomposition ServerStreaming rpc...")
-	req:=&calculatorpb.PrimeNumberDecompositonRequest{
-		Number: 26,
-	}
+func doClientStreaming(c calculatorpb.CalculatorServiceClient){
+	fmt.Printf("Starting to do compute client streaming rpc ...")
 
-	stream,err:=c.PrimeNumberDecomposition(context.Background(),req)
-	if err !=nil{
-		log.Fatalf("error while calling PrimeDecomposition rpc:%v",err)
+	stream,err:=c.ComputeAverage(context.Background())
+	if err!=nil{
+		log.Fatalf("error while sending stream :%v",err)
 	}
-	for {
-		res,err:=stream.Recv()
-		if err==io.EOF{
-			break
-		}
-		if err!=nil{
-			log.Fatalf("something went wrong %v",err)
-		}
-		fmt.Println(res.GetPrimeFactor())
+	numbers:=[]int32{2,4,6,3,8}
+
+	for _,number :=range numbers{
+		fmt.Printf("sending number:%v \n",number)
+		stream.Send(&calculatorpb.ComputeAverageRequest{
+			Number: number,
+		})
 	}
+	res,err:=stream.CloseAndRecv()
+	if err!=nil{
+		log.Fatalf("error while receiving the response :%v",err)
+	}
+	fmt.Printf("Average is %v",res.GetAverage())
+
 }
